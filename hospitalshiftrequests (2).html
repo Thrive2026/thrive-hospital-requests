@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<!-- ============================================================================
+THRIVE HOSPITAL HUB — STAFF SHIFT REQUEST FORM
+CONFIDENTIAL & PROPRIETARY — (c) 2026 Thrive Peer Support. All rights reserved.
+
+Standalone page — bookmark this on your own device. Submitting a request needs
+no login: pick your name and submit. Checking the status of your own past
+requests ("My Requests") is gated by a small self-serve passcode (set it the
+first time you check) so one person can't browse another's requests. Both
+write to / read from the same shared Supabase project the Hospital Hub reads
+from (appdata keys 'hosp_requests' and 'hosp_passcodes'), where Angelica
+reviews and decides requests on the Requests tab.
+============================================================================ -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hospital Hub — Submit a Request</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --thrive-blue:#3c50a0; --thrive-blue-deep:#283c8c; --thrive-blue-dark:#1a2861;
+  --thrive-yellow:#f0c814;
+  --bg:#f7f3ec; --paper:#ffffff; --ink:#1a2861; --ink-soft:#3e4a78;
+  --muted:#8089a8; --rule:#e6dfd2; --rule-strong:#cdc4b2;
+  --good:#2d8c30; --bad:#a52d6d;
+  --font-serif:'Fraunces',serif; --font-sans:'IBM Plex Sans',system-ui,sans-serif; --font-mono:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;display:flex;justify-content:center;padding:28px 16px 60px}
+.wrap{width:100%;max-width:560px}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.brand .mark{font-family:var(--font-serif);font-style:italic;font-weight:400;font-size:22px;color:var(--thrive-blue-dark)}
+.brand .sub{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:2px}
+.tabbar{display:flex;gap:4px;margin-bottom:14px;background:#efe9dc;border-radius:5px;padding:3px}
+.tab-btn{flex:1;padding:9px 8px;font-family:var(--font-sans);font-size:12.5px;font-weight:600;letter-spacing:.01em;border:none;border-radius:3px;background:none;color:var(--ink-soft);cursor:pointer;transition:background .15s,color .15s}
+.tab-btn.active{background:#fff;color:var(--thrive-blue-dark);box-shadow:0 1px 3px rgba(40,60,140,.12)}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:4px;padding:26px 24px;box-shadow:0 1px 0 rgba(40,60,140,.04), 0 8px 28px -12px rgba(40,60,140,.22);border-top:4px solid var(--thrive-yellow)}
+h1{font-family:var(--font-serif);font-weight:400;font-size:22px;letter-spacing:-0.02em;margin-bottom:6px}
+.lede{font-size:12.5px;color:var(--ink-soft);margin-bottom:20px;line-height:1.5}
+.fld{margin-bottom:16px}
+.lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:6px}
+.inp{width:100%;padding:9px 12px;border-radius:2px;border:1px solid var(--rule-strong);font-size:14px;font-family:inherit;background:var(--paper);color:var(--ink);outline:none;transition:border-color .15s}
+.inp:focus{border-color:var(--thrive-blue)}
+textarea.inp{resize:vertical;min-height:72px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:480px){.g2{grid-template-columns:1fr}}
+.date-row{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+.date-row .inp{flex:1}
+.date-row button{background:none;border:1px solid var(--rule-strong);border-radius:2px;color:var(--bad);cursor:pointer;font-size:13px;padding:8px 10px;font-family:inherit}
+.add-date{background:none;border:1px dashed var(--rule-strong);color:var(--ink-soft);border-radius:2px;padding:8px 14px;font-size:12.5px;cursor:pointer;font-family:inherit;width:100%}
+.add-date:hover{background:#f1ead9}
+.btn{padding:11px 20px;font-family:var(--font-sans);font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.02em;border:none;border-radius:2px;width:100%;transition:filter .15s}
+.btn:hover{filter:brightness(.94)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-submit{background:var(--thrive-blue-dark);color:#fff}
+.err{color:var(--bad);font-size:12.5px;margin-top:4px;min-height:16px}
+.ok{background:#dcf0dc;border:1px solid #BBF7D0;color:#1B5E20;border-radius:3px;padding:9px 13px;font-size:13px;margin-bottom:16px;display:none}
+.confirm{text-align:center;padding:20px 4px}
+.confirm .icon{font-size:38px;margin-bottom:10px}
+.confirm h2{font-family:var(--font-serif);font-weight:400;font-size:20px;margin-bottom:8px}
+.confirm p{color:var(--ink-soft);font-size:13px;margin-bottom:22px;line-height:1.6}
+.hint{font-size:11.5px;color:var(--muted);margin-top:5px}
+.req-card{border:1px solid var(--rule);border-radius:3px;padding:12px 14px;margin-bottom:10px;background:#fff}
+.req-card .hd{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:4px}
+.req-card .ty{font-size:13px;font-weight:600}
+.req-card .det{font-size:12px;color:var(--ink-soft)}
+.req-card .meta{font-size:11px;color:var(--muted);margin-top:4px}
+.pill{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 9px;border-radius:10px;white-space:nowrap}
+.empty-note{background:#eef1fb;border:1px solid #dbe1f5;color:var(--ink-soft);border-radius:3px;padding:10px 13px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><div><div class="mark">Thrive</div><div class="sub">Hospital Hub · Requests</div></div></div>
+  <div class="tabbar">
+    <button class="tab-btn" id="tabSubmit" onclick="switchView('submit')">Submit a Request</button>
+    <button class="tab-btn" id="tabMine" onclick="switchView('myrequests')">My Requests</button>
+  </div>
+  <div class="card" id="card"></div>
+</div>
+
+<script>
+const SB_URL = 'https://fussjixekyhwuromauff.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1c3NqaXhla3lod3Vyb21hdWZmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3MjMzNzYsImV4cCI6MjA5ODI5OTM3Nn0.3yfRu5LMDlIasvc0cu_GOcXAquji6ZYUkp3dgxk1j2M';
+const db = {
+  _h(){return{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=representation'};},
+  async get(table,filter=''){
+    try{const r=await fetch(`${SB_URL}/rest/v1/${table}?${filter}`,{headers:this._h()});if(!r.ok)throw new Error(await r.text());return await r.json();}
+    catch(e){console.warn('[db.get]',e);return null;}
+  },
+  async upsert(table,row){
+    try{const r=await fetch(`${SB_URL}/rest/v1/${table}`,{method:'POST',headers:{...this._h(),'Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify(row)});if(!r.ok)throw new Error(await r.text());return await r.json();}
+    catch(e){console.warn('[db.upsert]',e);return null;}
+  }
+};
+
+// Falls back to these if the live Supabase 'staff' key can't be reached — keeps this
+// page usable (if slightly stale) even offline. Mirrors ROSTER_DEFAULT in the Hospital
+// Hub itself; update both places if the team roster changes.
+const ROSTER_FALLBACK = [
+  'Nancy Joseph','Stephen Sidoti','Susan Zelenka','Tamara Ash','Derek Christopher',
+  'Anna Stevens','Gabrielle Sabolich','La Vinia Evans','Ross Scott','Janine Roulette',
+  'Hunter-Dane von Carlowitz'
+];
+const SITES_FALLBACK = ['UH Ahuja','UH CMC','UH EPAT','MetroHealth Parma','UH SJMC','MetroHealth Broadway','UH Parma'];
+const REQUEST_TYPES = ['Shift change','Time off (PTO)','Sick time','Schedule swap','Other'];
+
+let ROSTER = ROSTER_FALLBACK.map((n,i)=>({id:null,name:n}));
+let SITES = SITES_FALLBACK.slice();
+let dateRowN = 0;
+let VIEW = 'submit';
+let HOSP_PASSCODES = null; // lazy-loaded {key: '1234'} — key = 'id:<staffId>' or 'name:<staffName>'
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+async function loadRoster(selectId){
+  const rows = await db.get('appdata','key=eq.staff');
+  if(rows && rows[0] && rows[0].value){
+    try{
+      const all = JSON.parse(rows[0].value);
+      const hosp = all.filter(s=>(s.program==='Hospital'||s.mgr==='Angelica') && (s.status!=='Inactive'));
+      if(hosp.length) ROSTER = hosp.map(s=>({id:s.id, name:`${s.fn} ${s.ln}`})).sort((a,b)=>a.name.localeCompare(b.name));
+    }catch(e){ console.warn('[loadRoster]',e); }
+  }
+  const nameSel = document.getElementById(selectId);
+  if(nameSel) nameSel.innerHTML = `<option value="">Select your name…</option>` + ROSTER.map(s=>`<option value="${s.id==null?'':s.id}" data-name="${esc(s.name)}">${esc(s.name)}</option>`).join('');
+}
+async function loadSites(){
+  const rows = await db.get('appdata','key=eq.hosp_schedule');
+  if(rows && rows[0] && rows[0].value){
+    try{
+      const sched = JSON.parse(rows[0].value);
+      if(sched.sites && sched.sites.length) SITES = sched.sites;
+    }catch(e){ console.warn('[loadSites]',e); }
+  }
+  const siteSel = document.getElementById('r_site');
+  if(siteSel) siteSel.innerHTML = SITES.map(s=>`<option>${esc(s)}</option>`).join('') + `<option value="__other__">Other (type below)</option>`;
+}
+
+function switchView(v){
+  VIEW = v;
+  document.getElementById('tabSubmit').classList.toggle('active', v==='submit');
+  document.getElementById('tabMine').classList.toggle('active', v==='myrequests');
+  if(v==='submit') renderForm(); else renderMyRequests();
+}
+
+// ── Submit a Request ─────────────────────────────────────────────────────
+function renderForm(){
+  document.getElementById('card').innerHTML = `
+    <h1>Submit a Request</h1>
+    <div class="lede">Shift changes, PTO, sick time, or a schedule swap — this goes straight to Angelica for review. No login needed, just pick your name below.</div>
+    <div class="ok" id="okBanner"></div>
+    <div class="fld"><label class="lbl">Your Name</label>
+      <select class="inp" id="r_name"><option value="">Loading roster…</option></select>
+    </div>
+    <div class="fld"><label class="lbl">Request Type</label>
+      <select class="inp" id="r_type" onchange="onTypeChange(this.value)">${REQUEST_TYPES.map(t=>`<option>${t}</option>`).join('')}</select>
+    </div>
+    <div id="r_shift_fields">
+      <div class="g2">
+        <div class="fld"><label class="lbl">Site</label>
+          <select class="inp" id="r_site" onchange="onSiteChange(this.value)"><option>Loading…</option></select>
+        </div>
+        <div class="fld"><label class="lbl">Date</label>
+          <input class="inp" id="r_date" type="date">
+        </div>
+      </div>
+      <div class="fld" id="r_site_other_fld" style="display:none">
+        <label class="lbl">Site name</label>
+        <input class="inp" id="r_site_other" placeholder="e.g. Southwest General">
+      </div>
+      <div class="fld"><label class="lbl">Requested Time</label>
+        <input class="inp" id="r_time" placeholder="e.g. 8a–4p">
+      </div>
+    </div>
+    <div id="r_date_fields" style="display:none">
+      <label class="lbl">Date(s)</label>
+      <div id="dateRows"></div>
+      <button type="button" class="add-date" onclick="addDateRow()">+ Add another date</button>
+    </div>
+    <div class="fld" style="margin-top:16px"><label class="lbl">Reason / Details</label>
+      <textarea class="inp" id="r_reason" placeholder="Optional, but helpful for Angelica"></textarea>
+    </div>
+    <div class="err" id="formErr"></div>
+    <button class="btn btn-submit" onclick="submitRequest()">Submit Request</button>
+    <div class="hint">Bookmark this page — it always submits to the current shared Hospital Hub request queue. Use the "My Requests" tab above to check on something you already submitted.</div>
+  `;
+  addDateRow();
+  loadRoster('r_name');
+  loadSites();
+}
+function onTypeChange(type){
+  const isShift = type==='Shift change';
+  document.getElementById('r_shift_fields').style.display = isShift?'block':'none';
+  document.getElementById('r_date_fields').style.display = isShift?'none':'block';
+}
+function onSiteChange(val){
+  document.getElementById('r_site_other_fld').style.display = val==='__other__'?'block':'none';
+}
+function addDateRow(){
+  dateRowN++;
+  const wrap = document.getElementById('dateRows');
+  const row = document.createElement('div');
+  row.className='date-row';
+  row.innerHTML = `<input class="inp" type="date">${wrap.children.length?'<button type="button" onclick="this.parentElement.remove()">✕</button>':''}`;
+  wrap.appendChild(row);
+}
+function fmtDateShort(iso){
+  const dt = new Date(iso+'T00:00:00');
+  return isNaN(dt) ? iso : dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+function fmtDateTimeShort(iso){
+  if(!iso) return '—';
+  const dt = new Date(iso);
+  return isNaN(dt) ? iso : dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+async function submitRequest(){
+  const errEl = document.getElementById('formErr'); errEl.textContent='';
+  const nameSel = document.getElementById('r_name');
+  const staffOpt = nameSel.selectedOptions[0];
+  if(!nameSel.value && !(staffOpt && staffOpt.dataset.name)){ errEl.textContent='Select your name.'; return; }
+  const staffName = staffOpt.dataset.name;
+  const staffId = nameSel.value ? parseInt(nameSel.value,10) : null;
+  const type = document.getElementById('r_type').value;
+  const reason = document.getElementById('r_reason').value.trim();
+  const isShift = type==='Shift change';
+
+  let rec = { id: 'req_'+Date.now()+'_'+Math.random().toString(36).slice(2,7), staffId, staffName, type, reason, status:'pending', createdAt:new Date().toISOString() };
+
+  if(isShift){
+    const siteSel = document.getElementById('r_site');
+    let site = siteSel.value;
+    if(site==='__other__'){ site = document.getElementById('r_site_other').value.trim(); }
+    const date = document.getElementById('r_date').value;
+    const time = document.getElementById('r_time').value.trim();
+    if(!site){ errEl.textContent='Enter or select a site.'; return; }
+    if(!date){ errEl.textContent='Select the date.'; return; }
+    if(!time){ errEl.textContent='Enter the requested time.'; return; }
+    rec.site = site; rec.date = date; rec.requestedTime = time;
+    rec.detail = `${site} · ${fmtDateShort(date)} · ${time}`;
+  } else {
+    const dateInputs = Array.from(document.querySelectorAll('#dateRows input[type="date"]')).map(i=>i.value).filter(Boolean);
+    if(!dateInputs.length){ errEl.textContent='Add at least one date.'; return; }
+    dateInputs.sort();
+    rec.dateList = dateInputs;
+    rec.dates = dateInputs.map(fmtDateShort).join(', ');
+  }
+
+  const submitBtn = document.querySelector('.btn-submit');
+  submitBtn.disabled = true; submitBtn.textContent = 'Submitting…';
+
+  // Fetch-merge-write, same pattern the Hospital Hub itself uses for shared appdata blobs —
+  // so a request submitted seconds after another one (from a different device) doesn't
+  // clobber it.
+  let ok = false;
+  try{
+    const rows = await db.get('appdata','key=eq.hosp_requests');
+    const cur = (rows && rows[0] && rows[0].value) ? JSON.parse(rows[0].value) : [];
+    cur.push(rec);
+    const saved = await db.upsert('appdata',{key:'hosp_requests',value:JSON.stringify(cur)});
+    ok = !!saved;
+  }catch(e){ console.warn('[submitRequest]',e); }
+
+  if(!ok){
+    submitBtn.disabled = false; submitBtn.textContent = 'Submit Request';
+    errEl.textContent = "Couldn't submit — check your connection and try again.";
+    return;
+  }
+  renderConfirm(rec);
+}
+function renderConfirm(rec){
+  document.getElementById('card').innerHTML = `
+    <div class="confirm">
+      <div class="icon">✓</div>
+      <h2>Request submitted</h2>
+      <p>${esc(rec.staffName)} — ${esc(rec.type)}${rec.detail?` (${esc(rec.detail)})`:''}${rec.dates?` — ${esc(rec.dates)}`:''}<br>Angelica will review it on the Requests tab.</p>
+      <button class="btn btn-submit" onclick="switchView('submit')">Submit another request</button>
+    </div>`;
+}
+
+// ── My Requests — passcode-gated status check ───────────────────────────
+// Submitting stays login-free by design; this view only shows what a person
+// has already submitted, so it's gated by a small 4-digit passcode each
+// person sets themselves the first time they check (stored in a dedicated
+// Supabase key, kept separate from the shared org-wide staff roster).
+async function loadPasscodes(){
+  const rows = await db.get('appdata','key=eq.hosp_passcodes');
+  HOSP_PASSCODES = (rows && rows[0] && rows[0].value) ? JSON.parse(rows[0].value) : {};
+}
+function mrKeyFor(staffId, staffName){ return staffId!=null ? ('id:'+staffId) : ('name:'+staffName); }
+function renderMyRequests(){
+  document.getElementById('card').innerHTML = `
+    <h1>My Requests</h1>
+    <div class="lede">Check the status of requests you've already submitted. Pick your name, then enter your passcode — the first time you check, you'll set one.</div>
+    <div class="fld"><label class="lbl">Your Name</label>
+      <select class="inp" id="mr_name" onchange="onMrNameChange()"><option value="">Loading roster…</option></select>
+    </div>
+    <div id="mr_pass_block" style="display:none">
+      <div class="fld"><label class="lbl" id="mr_pass_lbl">Passcode</label>
+        <input class="inp" id="mr_pass" inputmode="numeric" maxlength="4" placeholder="4 digits">
+      </div>
+      <div class="fld" id="mr_pass_confirm_fld" style="display:none">
+        <label class="lbl">Confirm passcode</label>
+        <input class="inp" id="mr_pass_confirm" inputmode="numeric" maxlength="4" placeholder="4 digits">
+      </div>
+      <div class="err" id="mrErr"></div>
+      <button class="btn btn-submit" id="mrUnlockBtn" onclick="mrUnlock()">View my requests</button>
+    </div>
+    <div id="mr_results"></div>
+  `;
+  loadRoster('mr_name');
+}
+async function onMrNameChange(){
+  const sel = document.getElementById('mr_name');
+  const opt = sel.selectedOptions[0];
+  document.getElementById('mr_results').innerHTML = '';
+  const errEl = document.getElementById('mrErr'); if(errEl) errEl.textContent='';
+  document.getElementById('mr_pass').value=''; document.getElementById('mr_pass_confirm').value='';
+  const block = document.getElementById('mr_pass_block');
+  if(!sel.value && !(opt && opt.dataset.name)){ block.style.display='none'; return; }
+  if(HOSP_PASSCODES===null) await loadPasscodes();
+  const staffId = sel.value ? parseInt(sel.value,10) : null;
+  const staffName = opt.dataset.name;
+  const key = mrKeyFor(staffId, staffName);
+  const has = !!HOSP_PASSCODES[key];
+  block.style.display = 'block';
+  document.getElementById('mr_pass_lbl').textContent = has ? 'Passcode' : 'Create a passcode (4 digits)';
+  document.getElementById('mr_pass_confirm_fld').style.display = has ? 'none' : 'block';
+  document.getElementById('mrUnlockBtn').textContent = has ? 'View my requests' : 'Set passcode & view';
+}
+async function mrUnlock(){
+  const errEl = document.getElementById('mrErr'); errEl.textContent='';
+  const sel = document.getElementById('mr_name');
+  const opt = sel.selectedOptions[0];
+  if(!sel.value && !(opt && opt.dataset.name)){ errEl.textContent='Select your name.'; return; }
+  const staffId = sel.value ? parseInt(sel.value,10) : null;
+  const staffName = opt.dataset.name;
+  const key = mrKeyFor(staffId, staffName);
+  const code = document.getElementById('mr_pass').value.trim();
+  if(!/^\d{4}$/.test(code)){ errEl.textContent='Enter a 4-digit passcode.'; return; }
+  if(HOSP_PASSCODES===null) await loadPasscodes();
+  const has = !!HOSP_PASSCODES[key];
+  const btn = document.getElementById('mrUnlockBtn');
+  if(has){
+    if(HOSP_PASSCODES[key]!==code){ errEl.textContent='That passcode does not match.'; return; }
+  } else {
+    const confirm2 = document.getElementById('mr_pass_confirm').value.trim();
+    if(code!==confirm2){ errEl.textContent = "Passcodes don't match — enter the same 4 digits twice."; return; }
+    btn.disabled = true; btn.textContent = 'Saving…';
+    // Fetch-merge-write against the shared passcode blob, same pattern used everywhere
+    // else in this file for concurrent-safe writes to a shared Supabase key.
+    let saved = null;
+    try{
+      const rows = await db.get('appdata','key=eq.hosp_passcodes');
+      const cur = (rows && rows[0] && rows[0].value) ? JSON.parse(rows[0].value) : {};
+      cur[key] = code;
+      saved = await db.upsert('appdata',{key:'hosp_passcodes',value:JSON.stringify(cur)});
+      if(saved) HOSP_PASSCODES = cur;
+    }catch(e){ console.warn('[mrUnlock:setPasscode]',e); }
+    btn.disabled = false; btn.textContent = 'Set passcode & view';
+    if(!saved){ errEl.textContent = "Couldn't save your passcode — check your connection and try again."; return; }
+  }
+  showMyRequests(staffId, staffName);
+}
+async function showMyRequests(staffId, staffName){
+  const rows = await db.get('appdata','key=eq.hosp_requests');
+  const all = (rows && rows[0] && rows[0].value) ? JSON.parse(rows[0].value) : [];
+  const mine = all.filter(r => staffId!=null ? r.staffId===staffId : r.staffName===staffName)
+                  .sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  const el = document.getElementById('mr_results');
+  if(!mine.length){
+    el.innerHTML = `<div class="empty-note" style="margin-top:6px">No requests found for ${esc(staffName)} yet. Submitted requests will show up here.</div>`;
+    return;
+  }
+  el.innerHTML = `<div class="lbl" style="margin-top:18px;margin-bottom:8px">${esc(staffName)}'s requests</div>${mine.map(mrCard).join('')}`;
+}
+function mrPill(st){
+  const map = {pending:['#FEF3C7','#92400E','Pending'],approved:['#dcf0dc','#1B5E20','Approved'],denied:['#FEE2E2','#991B1B','Denied']};
+  const [bg,fg,lbl] = map[st]||map.pending;
+  return `<span class="pill" style="background:${bg};color:${fg}">${lbl}</span>`;
+}
+function mrCard(r){
+  return `<div class="req-card">
+    <div class="hd"><span class="ty">${esc(r.type)}</span>${mrPill(r.status)}</div>
+    <div class="det">${esc(r.detail||r.dates||'—')}</div>
+    ${r.reason?`<div class="det" style="color:var(--muted)">${esc(r.reason)}</div>`:''}
+    <div class="meta">Submitted ${fmtDateTimeShort(r.createdAt)}${r.decidedAt?` · Decided ${fmtDateTimeShort(r.decidedAt)}`:''}</div>
+  </div>`;
+}
+
+switchView('submit');
+</script>
+</body>
+</html>
